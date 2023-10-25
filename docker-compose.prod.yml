@@ -1,0 +1,14 @@
+version: "3.7"
+
+services:
+  app_rest:
+    image: registry.gitlab.com/apptechco/software/realestate/backend/app:${VERSION}
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - ./media:/var/www/media
+      - ./static:/var/www/static
+    command: ["rest"]
+    ports:
+      - 127.0.0.1:8000:9000

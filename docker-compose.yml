@@ -1,0 +1,39 @@
+version: "3.7"
+
+volumes:
+  python_data:
+  psql_data:
+
+
+services:
+  python:
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+      args:
+        - USER_ID=1000
+        - GROUP_ID=1000
+        - EXTRA_PKGS=jpeg-dev zlib-dev postgresql-dev libffi-dev
+        - EXPOSED_PORT=8000
+    restart: always
+    image: realEstate-python:dev
+    volumes:
+      - ./:/app
+      - python_data:/home/pyuser/.local/share/virtualenvs
+    ports:
+      - "8000:8000"
+    command: ["upgrade"]
+
+  postgres:
+    restart: always
+    image: mdillon/postgis:9.6-alpine
+    environment:
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASS
+      - POSTGRES_DB=$DB_NAME
+    volumes:
+      - psql_data:/var/lib/postgresql/data:z
+
+  # redis:
+  #   restart: always
+  #   image: redis:4.0.9-alpine

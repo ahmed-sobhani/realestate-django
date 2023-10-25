@@ -1,0 +1,35 @@
+FROM odoku/geopython:3.6
+
+
+RUN apk add --no-cache linux-headers musl-dev gcc tzdata && \
+    rm -rf /var/cache/apk/*
+
+ARG USER_ID
+ARG GROUP_ID
+
+RUN addgroup -g $GROUP_ID pyuser && \
+    adduser -h /home/pyuser -u $USER_ID -D -G pyuser pyuser && \
+    mkdir -p /home/pyuser/.local/share/virtualenvs && \
+    chown pyuser:pyuser -R /home/pyuser && \
+    pip install --no-cache-dir pipenv
+
+ARG EXTRA_PKGS
+
+RUN [ -z "$EXTRA_PKGS" ] || (apk add --no-cache $EXTRA_PKGS && rm -rf /var/cache/apk/*)
+
+ENV PIPENV_DONT_LOAD_ENV=1
+
+WORKDIR /app
+
+ARG EXPOSED_PORT
+
+EXPOSE $EXPOSED_PORT
+
+ENV PATH /home/pyuser/.local/share/virtualenvs/app-4PlAip0Q/bin:$PATH
+
+USER pyuser
+
+CMD exec /bin/sh -c "trap : TERM INT; (while true; do sleep 1000; done) & wait"
+
+
+ENTRYPOINT ["/.build/entrypoint.sh"]

@@ -1,0 +1,73 @@
+version: "3.7"
+
+volumes:
+  psql_data:
+
+x-app: &app
+  image: registry.gitlab.com/apptechco/software/realestate/backend/app:${VERSION}
+  restart: always
+  links:
+    - postgres
+    - redis
+  environment:
+    - SECRET_KEY=$SECRET_KEY
+    - SALT_KEY=$SALT_KEY
+    - SALT_KEY2=$SALT_KEY2
+    - DEBUG=$DEBUG
+    - DJANGO_ENV=$DJANGO_ENV
+    - ALLOWED_HOSTS=$ALLOWED_HOSTS
+    - DJANGO_HOSTNAME=$DJANGO_HOSTNAME
+    - DJANGO_HAS_TLS=$DJANGO_HAS_TLS
+    - DRF_ENABLED=$DRF_ENABLED
+    - CORS_ORIGIN_ALLOW_ALL=$CORS_ORIGIN_ALLOW_ALL
+    - CORS_ORIGIN_WHITELIST=$CORS_ORIGIN_WHITELIST
+    - REDIS_HOST=$REDIS_HOST
+    - REDIS_PORT=$REDIS_PORT
+    - DATABASE_USER=$DB_USER
+    - DATABASE_PASS=$DB_PASS
+    - DATABASE_HOST=$DB_HOST
+    - DATABASE_PORT=$DB_PORT
+    - DATABASE_NAME=$DB_NAME
+    - SENTRY_ENABLED=$SENTRY_ENABLED
+    - SENTRY_IO_KEY=$SENTRY_IO_KEY
+    - SENTRY_IO_PROJECT=$SENTRY_IO_PROJECT
+    - SENTRY_HTTP_PROXY=$SENTRY_HTTP_PROXY
+    - SENTRY_HTTPS_PROXY=$SENTRY_HTTPS_PROXY
+    - ZARRINPAL_MERCHANT=$ZARRINPAL_MERCHANT
+    - ZARRINPAL_IS_SANDBOX=$ZARRINPAL_IS_SANDBOX
+    - FCM_API_KEY=$FCM_API_KEY
+    - FCM_PROXY=$FCM_PROXY
+    - KAVE_NEGAR_TOKEN=$KAVE_NEGAR_TOKEN
+    - UWSGI_PROCESSES=$UWSGI_PROCESSES
+    - CELERY_WORKERS=$CELERY_WORKERS
+    - CELERY_PROCESSES=$CELERY_PROCESSES
+  volumes:
+    - ./media:/var/www/media
+
+
+services:
+
+
+  app_rest:
+    <<: *app
+    command: ["rest"]
+    ports:
+      - 127.0.0.1:9000:9000
+
+  app_celery:
+    <<: *app
+    command: ["celery"]
+
+  postgres:
+    restart: always
+    image: mdillon/postgis:9.6-alpine
+    environment:
+      - POSTGRES_USER=$DB_USER
+      - POSTGRES_PASSWORD=$DB_PASS
+      - POSTGRES_DB=$DB_NAME
+    volumes:
+      - psql_data:/var/lib/postgresql/data:z
+
+  redis:
+    restart: always
+    image: redis:4.0.9-alpine

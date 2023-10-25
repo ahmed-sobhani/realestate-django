@@ -1,0 +1,43 @@
+image: docker:stable
+
+stages:
+  - build
+  - deploy
+
+services:
+  - docker:dind
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  APP_TAG: $CI_REGISTRY_IMAGE/app:$CI_COMMIT_SHA
+  APP_LAST: $CI_REGISTRY_IMAGE/app:latest
+
+before_script:
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+build:
+  stage: build
+  script:
+    - docker pull $APP_LAST || true
+    - docker build --pull --cache-from $APP_LAST --tag $APP_TAG --tag $APP_LAST -f ./.build/Dockerfile .
+    - docker push $APP_TAG
+    - docker push $APP_LAST
+  only:
+    - master
+    - staging
+
+deploy_stg:
+  stage: deploy
+  image: alpine
+  variables:
+    GIT_STRATEGY: none
+    DEPLOY_URL: "${DC_URL}/${DC_TEST_PATH}"
+    DEPLOY_DATA: '{"secret":"$DC_SECRET","value":"$CI_COMMIT_SHA","command":"$DC_CMD_STG"}'
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - STATUS_CODE=$(curl -o o.html -w "%{http_code}" -s -X POST -d "$DEPLOY_DATA" $DEPLOY_URL)
+    - '[ $STATUS_CODE -eq 200 ] || (cat o.html && exit 1)'
+  only:
+    - staging
+
